@@ -7,7 +7,7 @@ end entity buffer_tb;
 
 architecture tb of buffer_tb is
   
-  signal period : TIME := 10 ns;
+  constant period : TIME := 10 ns;
 
   component buf is
     generic(
@@ -54,7 +54,12 @@ begin
 
   clk_proc : process
   begin
-    clk <= not clk after period / 2; 
+    for i in 0 to 100 loop
+      wait for period / 2;
+      clk <= not clk; 
+      wait for period / 2;
+      clk <= not clk; 
+    end loop;
     wait;
   end process clk_proc;
 
@@ -69,7 +74,7 @@ begin
     -- start inserting values;
     resetn <= '1';
 
-
+    wait for 100*period;
     wait;
   end process input_proc;
 
