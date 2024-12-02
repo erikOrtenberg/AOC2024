@@ -23,10 +23,9 @@ architecture rtl of buf is
   
   type buffer_type is array ((size - 1) downto 0) of INTEGER;
 
-  signal output_r : INTEGER;
   signal head     : INTEGER range 0 to (size - 1);
   signal tail     : INTEGER range 0 to (size - 1);
-  signal nr_elems : INTEGER range 0 to (size - 1);
+  signal nr_elems : INTEGER range 0 to (size);
   signal buff      : buffer_type;
 
   
@@ -36,20 +35,27 @@ architecture rtl of buf is
 begin
   -- permanently bind internal signals to outputs
   valid_out <= internal_valid_out and resetn;
+  valid_in <= internal_valid_in and resetn;
+  output <= buff(head);
 
-  output_and_pointer_proc: process(clk, resetn)
+  do_it_all_proc: process(clk, resetn)
   begin
     if resetn = '0' then
-      output <= 0;
       head <= 0;
       tail <= 0;
       nr_elems <= 0;
+      for i in 0 to size - 1 loop
+        buff(i) <= 0;
+      end loop;
     elsif rising_edge(clk) then
-      output <= output_r;
+      -- capture input in buffer
+      if ready_in = '1' and internal_valid_in = '1' then
+        buff(tail) <= input;
+      end if;
       -- add element to buffer
       if internal_valid_in = '1' and ready_in = '1' then
         nr_elems <= nr_elems + 1;
-        if tail + 1 > size then
+        if tail + 1 >= size then
           tail <= 0;
         else 
           tail <= tail + 1;
@@ -57,16 +63,16 @@ begin
       -- consume element from buffer
       elsif internal_valid_out = '1' and ready_out = '1' then
         nr_elems <= nr_elems - 1;
-        if head + 1 > size then
+        if head + 1 >= size then
           head <= 0;
         else 
           head <= head + 1;
         end if;
       end if;
     end if;
-  end process output_and_pointer_proc;
+  end process do_it_all_proc;
 
-  valid_proc: process(head, tail)
+  valid_proc: process(head, tail, nr_elems)
   begin
     -- buffer full
     if nr_elems = size then
@@ -81,15 +87,5 @@ begin
       internal_valid_out <= '1';
     end if;
   end process valid_proc;
-
-  buffer_proc: process(ready_in, ready_out, input)
-  begin
-    if ready_in = '1' and internal_valid_in = '1' then
-      buff(tail) <= input;
-    end if;
-    if ready_out = '1' and internal_valid_out = '1' then
-      output_r <= buff(head);
-    end if;
-  end process buffer_proc;
 
 end architecture rtl;
