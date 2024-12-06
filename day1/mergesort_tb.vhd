@@ -5,7 +5,6 @@ use IEEE.MATH_REAL.all;
 
 entity mergesort_tb is
 end entity mergesort_tb;
-
 architecture tb of mergesort_tb is
 
 
