@@ -27,6 +27,7 @@ architecture rtl of buf is
   signal tail     : INTEGER range 0 to (size - 1);
   signal nr_elems : INTEGER range 0 to (size);
   signal buff      : buffer_type;
+  signal output_r : INTEGER;
 
   
   signal internal_valid_in : std_logic;
@@ -36,14 +37,16 @@ begin
   -- permanently bind internal signals to outputs
   valid_out <= internal_valid_out and resetn;
   valid_in <= internal_valid_in and resetn;
+  --output <= output_r;
   output <= buff(head);
 
-  do_it_all_proc: process(clk, resetn)
+  do_it_all_proc: process(clk, resetn, ready_in, internal_valid_in, internal_valid_out)
   begin
     if resetn = '0' then
       head <= 0;
       tail <= 0;
       nr_elems <= 0;
+      --output_r <= buff(0);
       for i in 0 to size - 1 loop
         buff(i) <= 0;
       end loop;
@@ -51,17 +54,16 @@ begin
       -- capture input in buffer
       if ready_in = '1' and internal_valid_in = '1' then
         buff(tail) <= input;
-      end if;
-      -- add element to buffer
-      if internal_valid_in = '1' and ready_in = '1' then
         nr_elems <= nr_elems + 1;
         if tail + 1 >= size then
           tail <= 0;
         else 
           tail <= tail + 1;
         end if;
-      -- consume element from buffer
-      elsif internal_valid_out = '1' and ready_out = '1' then
+      end if;
+    elsif falling_edge(clk) then
+      -- consume element from bufer
+      if internal_valid_out = '1' and ready_out = '1' then
         nr_elems <= nr_elems - 1;
         if head + 1 >= size then
           head <= 0;
@@ -69,6 +71,7 @@ begin
           head <= head + 1;
         end if;
       end if;
+      --output_r <= buff(head);
     end if;
   end process do_it_all_proc;
 

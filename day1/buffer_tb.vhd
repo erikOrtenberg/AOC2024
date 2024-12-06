@@ -122,38 +122,38 @@ begin
     --Moving on... Removing elements
     ready_in <= '0';
     ready_out <= '1';
-    wait for period * 1 / 4;
+    wait for period * 3 / 4;
 
     assert output = 1*i report "first inserted element was not outputed ;_;" severity FAILURE;
 
-    wait for period * 3 / 4;
+    wait for period * 1 / 4;
     -- buffer contains 3 elements,
     assert valid_in = '1' report "valid_in is 0, should be able to receive >:(" severity FAILURE;
     assert valid_out = '1' report "valid_out is 0, should be able to send >:(" severity FAILURE;
     
-    wait for period * 1 / 4;
+    wait for period * 3 / 4;
 
     assert output = 2*i report "second inserted element was not outputed ;_;" severity FAILURE;
 
-    wait for period * 3 / 4;
+    wait for period * 1 / 4;
     -- buffer contains 2 elements,
     assert valid_in = '1' report "valid_in is 0, should be able to receive >:(" severity FAILURE;
     assert valid_out = '1' report "valid_out is 0, should be able to send >:(" severity FAILURE;
     
-    wait for period * 1 / 4;
+    wait for period * 3 / 4;
 
     assert output = 3*i report "third inserted element was not outputed ;_;" severity FAILURE;
 
-    wait for period * 3 / 4;
+    wait for period * 1 / 4;
     -- buffer contains 1 elements,
     assert valid_in = '1' report "valid_in is 0, should be able to receive >:(" severity FAILURE;
     assert valid_out = '1' report "valid_out is 0, should be able to send >:(" severity FAILURE;
     
-    wait for period * 1 / 4;
+    wait for period * 3 / 4;
 
     assert output = 4*i report "fourth inserted element was not outputed ;_;" severity FAILURE;
 
-    wait for period * 3 / 4;
+    wait for period * 1 / 4;
     -- buffer contains 0 elements,
     assert valid_in = '1' report "valid_in is 0, should be able to receive >:(" severity FAILURE;
     assert valid_out = '0' report "valid_out is 1, should empty >:(" severity FAILURE;

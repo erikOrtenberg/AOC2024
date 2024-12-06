@@ -32,7 +32,7 @@ architecture recurse of mergesort is
   signal two_output     : INTEGER;
   signal inputs_remain  : INTEGER;
 
-  signal receiving      : std_logic;
+  signal sorted_counter : INTEGER;
 
 
   signal top_buf_valid_out    : std_logic; 
@@ -44,7 +44,7 @@ architecture recurse of mergesort is
   signal internal_bottom_buf_ready_out : std_logic;
 
   signal buf_ready_in  : std_logic;
-  signal buf_ready_out : std_logic;
+  --signal buf_ready_out : std_logic;
   signal buf_input     : INTEGER;
   signal buf_valid_in  : std_logic;
   signal buf_valid_out : std_logic;
@@ -127,7 +127,7 @@ begin
         clk => clk,
         resetn => resetn,
         ready_in => buf_ready_in,
-        ready_out => buf_ready_out,
+        ready_out => ext_buf_ready_out,
         input => buf_input,
         valid_in => buf_valid_in,
         valid_out => buf_valid_out,
@@ -141,17 +141,24 @@ begin
   -- correct control signals to '0' so that parents of the leaf nodes can not consume the 
   -- input more than once.
 
-  sorting_proc: process(clk, resetn, finished, buf_valid_in, output_top, output_bottom, top_buf_valid_out, bottom_buf_valid_out)
+  sorted_count: process(clk, resetn, ext_buf_ready_out, ext_buf_valid_out)
   begin
     if resetn = '0' then
-      receiving <= '0';
-      finished <= '0';
+      sorted_counter <= 0;
+    elsif falling_edge(clk) and ext_buf_ready_out = '1' and ext_buf_valid_out = '1' then
+      sorted_counter <= sorted_counter + 1;
+    end if;
+  end process sorted_count;
+
+  sorting_proc: process(clk, resetn, sorted_counter, buf_valid_in, output_top, buf_valid_out, output_bottom, top_buf_valid_out, bottom_buf_valid_out)
+  begin
+    if resetn = '0' then
       internal_top_buf_ready_out <= '0';
       internal_bottom_buf_ready_out <= '0';
       inputs_remain <= 2;
     -- stop if finished is '1' and 
     -- dont do this unless size is larger than 1
-    elsif size <= 2 and finished = '0' then
+    elsif size <= 2 and sorted_counter < size then
       ext_buf_valid_out <= '1';
       -- BASE CASE 
       if falling_edge(clk) then
@@ -166,62 +173,56 @@ begin
         elsif inputs_remain = 1 and ext_buf_ready_out = '1' then
           two_output <= input(1);
           inputs_remain <= 0;
-          finished <= '1';
         elsif inputs_remain = 3 and ext_buf_ready_out = '1' then
           two_output <= input(0);
           inputs_remain <= 0;
-          finished <= '1';
         end if;
       end if;
-    elsif size > 1 and finished = '0' then
-      -- RECURSING CASE
-      ext_buf_valid_out <= buf_valid_out;
-      -- update buffer inputs on falling edge
-        -- check so that buffer has space
-        if buf_valid_in = '1' then 
-          -- get correct value based on sorting and availability
-          if top_buf_valid_out = '1' and bottom_buf_valid_out = '0' then
-            receiving <= '1';
-            --consume from top
-            if falling_edge(clk) then
-              internal_top_buf_ready_out <= '1';
-            end if;
-            buf_input <= output_top;
-            buf_ready_in <= '1';
-          elsif top_buf_valid_out = '0' and bottom_buf_valid_out = '1' then
-            receiving <= '1';
-            --consume from bottom
-            if falling_edge(clk) then
+    elsif size > 2 and sorted_counter < size then
+    -- RECURSING CASE
+    ext_buf_valid_out <= buf_valid_out;
+    -- update buffer inputs on falling edge
+      -- check so that buffer has space
+      if buf_valid_in = '1' then 
+        -- get correct value based on sorting and availability
+        buf_ready_in <= '1';
+        if top_buf_valid_out = '1' and bottom_buf_valid_out = '0' then
+          --consume from top
+          if rising_edge(clk) then
+            internal_top_buf_ready_out <= '1';
+            internal_bottom_buf_ready_out <= '0';
+          end if;
+          buf_input <= output_top;
+        elsif top_buf_valid_out = '0' and bottom_buf_valid_out = '1' then
+          --consume from bottom
+          if rising_edge(clk) then
+            internal_top_buf_ready_out <= '0';
+            internal_bottom_buf_ready_out <= '1';
+          end if;
+          buf_input <= output_bottom;
+        elsif top_buf_valid_out = '1' and bottom_buf_valid_out = '1' then
+          --compare and consume from smallest
+          if output_top > output_bottom then
+            if rising_edge(clk) then
+              internal_top_buf_ready_out <= '0';
               internal_bottom_buf_ready_out <= '1';
             end if;
             buf_input <= output_bottom;
-            buf_ready_in <= '1';
-          elsif top_buf_valid_out = '1' and bottom_buf_valid_out = '1' then
-            receiving <= '1';
-            --compare and consume from smallest
-            buf_ready_in <= '1';
-            if output_top > output_bottom then
-              if falling_edge(clk) then
-                internal_bottom_buf_ready_out <= '1';
-              end if;
-              buf_input <= output_bottom;
-            else 
-              if falling_edge(clk) then
-                internal_top_buf_ready_out <= '1';
-              end if;
-              buf_input <= output_top;
+          else 
+            if rising_edge(clk) then
+              internal_top_buf_ready_out <= '1';
+              internal_bottom_buf_ready_out <= '0';
             end if;
-          elsif receiving = '1' then
-            --don't consume 
-            buf_ready_in <= '0';
-            finished <= '1';
-          end if; 
-        end if;
-
-      elsif falling_edge(clk) then 
-        --Finished, stop outputing
-        ext_buf_valid_out <= '0';
-
+            buf_input <= output_top;
+          end if;
+        else
+          --don't consume 
+          buf_ready_in <= '0';
+        end if; 
+      end if;
+    elsif sorted_counter >= size - 2 then 
+      --Finished, stop outputing
+      ext_buf_valid_out <= '0';
     end if;
   end process sorting_proc;
 

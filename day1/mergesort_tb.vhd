@@ -1,13 +1,15 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
+use IEEE.MATH_REAL.all;
 
 entity mergesort_tb is
 end entity mergesort_tb;
 
 architecture tb of mergesort_tb is
-  
-  constant size   : natural := 8;
+
+
+  constant size   : natural := 256;
   signal received : natural := size;
 
   constant period : TIME := 10 ns;
@@ -38,10 +40,17 @@ architecture tb of mergesort_tb is
 
 begin
 
-  input_bind: process
+  input_bind: process    
+    variable seed1, seed2 : POSITIVE; 
+    variable rand : real;
+    variable range_of_rand : real := 1000.0;
+    variable rand_int : INTEGER;
   begin
     for i in 0 to size - 1 loop
-      input(i) <= size - i;
+      uniform(seed1, seed2, rand);              -- generate random number
+      rand_int := integer(rand*range_of_rand);  -- rescale to 0..1000, convert integer part 
+      assert false report INTEGER'image(rand_int) severity note;
+      input(i) <= rand_int;
     end loop;
   wait;
   end process input_bind;
@@ -73,8 +82,8 @@ begin
   begin
     wait for period;
     resetn <= '1';
-    ext_buf_ready_out <= '1';
-    wait for 100*period;
+    ext_buf_ready_out <= '0';
+    wait for 1000*period;
     finished <= TRUE;
     wait;
   end process proc_name;
