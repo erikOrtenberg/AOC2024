@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare -a FILES=("buf" "buffer_tb" "mergesort" "mergesort_tb" "abssub" "accumulator" "part1" "part1_tb")
+declare -a FILES=("buf" "buffer_tb" "mergesort" "mergesort_tb" "abssub" "accumulator" "part1" "part1_tb" "systolic_array" "part2" "part2_tb")
 
 for file in "${FILES[@]}"
 do
