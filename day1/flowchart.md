@@ -39,3 +39,46 @@ Input vector |                                  +-----------+ ---> ...         |
                                                     output bottom half
 
 
+## DAY 1 PART 2
+
+### OVERALL STRUCTURE
+Each unit matches one value from column 1 with every occurance in column 2. This count is then output and multiplied with the input.
+
+                        |                                                 
+               Column 2 | Stream                                         
+                       \|/                                               
+                  +-----------+                                          
+                  |           |                +-----------+                         
+ Column 1[0]      |  Systolic | Output count   |           |              +-------------------------+                        
+    ------+------>|   Array   |--------------->|           |              |                         | Output                   
+          |       |    Unit   |                |   Mult    |-----+------->|   Vector Sum Reduction  |------->                        
+          |       |           |      +-------->|           |     |        |                         |                  
+          |       +-----------+      |         |           |     |        +-------------------------+            
+          |             |            |         +-----------+     |                    
+          +-------------|------------+                           |       
+                       \|/                                       |       
+                  +-----------+                                  |       
+                  |           |                +-----------+     |                    
+ Column 1[1]      |  Systolic | Output count   |           |     |                                
+    ------+------>|   Array   |--------------->|           |     |                             
+          |       |    Unit   |                |   Mult    |-----+                         
+          |       |           |      +-------->|           |     |                          
+          |       +-----------+      |         |           |     |                    
+          |             |            |         +-----------+     |                     
+          +-------------|------------+                           |       
+                       \|/                                       |       
+                                                                 |
+                   ... ... ...                                   |
+                                                                 |
+                        |                                        |        
+                        |                                        |       
+                       \|/                                       |       
+                  +-----------+                                  |       
+                  |           |                +-----------+     |                    
+ Column 1[1000]   |  Systolic | Output count   |           |     |                                
+    ------+------>|   Array   |--------------->|           |     |                             
+          |       |    Unit   |                |   Mult    |-----+                         
+          |       |           |      +-------->|           |                               
+          |       +-----------+      |         |           |                         
+          |                          |         +-----------+                          
+          +--------------------------+                                  
